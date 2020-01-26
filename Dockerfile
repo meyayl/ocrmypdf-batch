@@ -28,7 +28,7 @@ FROM ubuntu:19.10
 LABEL org.label-schema.build-date=$BUILD_DATE \
       org.label-schema.name="OCRmyPDF" \
       org.label-schema.description="orcympdf batch processor" \
-      org.label-schema.vcs-url="https://github.com/jbarlow83/OCRmyPDF" \
+      org.label-schema.vcs-url="https://github.com/meyayl/ocrmypdf-batch" \
       org.label-schema.vcs-ref=$VCS_REF \
       org.label-schema.version=$VERSION \
       org.label-schema.schema-version="1.0"

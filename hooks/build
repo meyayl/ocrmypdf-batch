@@ -3,8 +3,9 @@ echo "build hook started."
 source ./hooks/pre_build
 set -eu
 
-docker build --no-cache \
+docker build --pull \
              --build-arg BUILD_DATE=${BUILD_DATE} \
+             --build-arg VCS_REF=${VCS_REF} \
              --build-arg VERSION=${VERSION} \
              --tag=$IMAGE_NAME .
 
