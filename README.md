@@ -57,7 +57,7 @@ The volume parameters are split into two halves, separated by a colon, the left 
 | /out | Mount point for final files. Needs to match OUT_FOLDER. |
 | /processed |  Mount point for processed orignals. Needs to match PROCESSED_FOLDER. |
 
-##ä OCRmyPDF Parameters for use with OCRMMPYDF_OPTIONS 
+## OCRmyPDF Parameters for use with OCRMMPYDF_OPTIONS 
 
 [-h] [-l LANGUAGE] [--image-dpi DPI]
 [--output-type {pdfa,pdf,pdfa-1,pdfa-2,pdfa-3}]
