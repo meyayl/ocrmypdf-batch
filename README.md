@@ -38,8 +38,6 @@ services:
 ## Parameters
 The environment parameters are split into two halves, separated by an equal, the left hand side representing the host and the right the container side.
 
-IN_FOLDER=/in  OUT_FOLDER=/out PROCESSED_FOLDER=/processed OCRMYPDF_OPTIONS="-l deu+eng" UID=0 GID=0
-
 | ENV| DEFAULT | DESCRIPTION |
 | ------ | ------ | ------ |
 | IN_FOLDER | /in | Optional: path inside the container. See VOLUMES table for description. |
