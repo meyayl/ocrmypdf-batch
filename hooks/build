@@ -1,0 +1,12 @@
+#!/bin/bash
+echo "build hook started."
+source ./hooks/pre_build
+set -eu
+
+docker build --no-cache \
+             --build-arg BUILD_DATE=${BUILD_DATE} \
+             --build-arg VERSION=${VERSION} \
+             --tag=$IMAGE_NAME .
+
+echo "build hook terminated successfully."
+

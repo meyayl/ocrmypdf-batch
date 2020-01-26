@@ -1,0 +1,33 @@
+#!/bin/bash -e
+echo "pre_build hook started."
+
+# Set TAG from SOURCE-BRANCH varible
+[ -n "$SOURCE_BRANCH" ]  || SOURCE_BRANCH=$(git symbolic-ref -q --short HEAD)
+if [[ "${SOURCE_BRANCH}" =~ "master" ]]; then 
+	VERSION=latest
+elif [[ "${SOURCE_BRANCH/-*/}" =~ ^[0-9.]+*$ ]]; then
+    VERSION=${SOURCE_BRANCH/-*/}
+fi
+# Set BUILD_DATE
+BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") 
+
+# SET VCS_REF aka commit id
+VCS_REF=$(git rev-parse --short HEAD)
+
+# Set IMAGE_NAME
+[ -n "$IMAGE_NAME" ] || IMAGE_NAME=meyay/ocrmypdf:${VERSION}
+
+# Print available variables
+echo "Environment variables:
+  IMAGE_NAME=$IMAGE_NAME
+  DOCKER_REPO=$DOCKER_REPO
+  DOCKER_TAG=$DOCKER_TAG
+  SOURCE_BRANCH=$SOURCE_BRANCH
+  VERSION=$VERSION
+  DOCKERFILE_PATH=$DOCKERFILE_PATH
+"
+
+# changing tag in the Dockerhub description
+sed -E "s#meyay/ocrmypdf:[0-9.]+#meyay/ocrmypdf:$VERSION#g" README.md
+
+echo "pre_build hook terminated successfully."
