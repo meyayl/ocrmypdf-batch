@@ -17,9 +17,9 @@ Installed Tesseract-OCR languages: deu, eng, fra, por, spa
 ```sh
 docker run -d \
  --name=ocrmypdf-batch \
- --volume $PWD/read-only:/read-only \
- --volume $PWD/read-write:/read-write \
- --volume $PWD/merged:/merged \
+ --volume $PWD/in:/in \
+ --volume $PWD/out:/out \
+ --volume $PWD/processed:/processed \
   meyay/ocrmypdf-batch:9.0.3
 ```
 ## Docker Compose Usage 
