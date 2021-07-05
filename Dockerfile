@@ -1,4 +1,4 @@
-FROM ubuntu:19.10 AS download
+FROM ubuntu:20.04 AS download
 RUN apt update \
     && apt install --yes wget upx gcc libc-dev \
     && wget -L -O /usr/local/bin/gosu https://github.com/tianon/gosu/releases/download/1.11/gosu-amd64 \
@@ -6,7 +6,7 @@ RUN apt update \
     && strip /usr/local/bin/gosu \
     && upx -q /usr/local/bin/gosu
 
-FROM ubuntu:19.10 AS builder
+FROM ubuntu:20.04 AS builder
 RUN apt-get update && apt-get install --yes --no-install-recommends \
       build-essential autoconf automake libtool \
       libleptonica-dev \
@@ -23,7 +23,7 @@ RUN apt-get update && apt-get install --yes --no-install-recommends \
     && strip /usr/local/bin/jbig2 \
     && upx -q /usr/local/bin/jbig2
 
-FROM ubuntu:19.10
+FROM ubuntu:20.04
 
 LABEL org.label-schema.build-date=$BUILD_DATE \
       org.label-schema.name="OCRmyPDF" \

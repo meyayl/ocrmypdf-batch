@@ -1,7 +1,7 @@
 [![](https://images.microbadger.com/badges/image/meyay/ocrmypdf-batch.svg)](https://microbadger.com/images/meyay/ocrmypdf-batch "Get your own image badge on microbadger.com")[![](https://images.microbadger.com/badges/version/meyay/ocrmypdf-batch.svg)](https://microbadger.com/images/meyay/ocrmypdf-batch "Get your own version badge on microbadger.com")[![](https://images.microbadger.com/badges/commit/meyay/ocrmypdf-batch.svg)](https://microbadger.com/images/meyay/ocrmypdf-batch "Get your own commit badge on microbadger.com")
 # ocrmypdf-batch
 
-OCRmyPDF 9.0.3. batch processing image with jbig2 and unpaper.   
+OCRmyPDF 9.6.0 batch processing image with jbig2 and unpaper.   
 
 On container start it will process all existing PDF files in the IN_FOLDER, once existing files are processed, it registers iNotify watches on the IN_FOLDER and waits for new files that are copied or moved to the IN_FOLDER. It will only process image based PDF files and ignore PDF files that are already text based.
 
@@ -20,14 +20,14 @@ docker run -d \
  --volume $PWD/in:/in \
  --volume $PWD/out:/out \
  --volume $PWD/processed:/processed \
-  meyay/ocrmypdf-batch:9.0.3
+  meyay/ocrmypdf-batch:9.6.0
 ```
 ## Docker Compose Usage 
 ```
 version: '2.2'
 services:
   ocrmypdf-batch:
-    image: meyay/ocrmypdf:9.0.3
+    image: meyay/ocrmypdf:9.6.0
     container_name: ocrmypdf-batch
     volumes:
     - $PWD/in:/in:rw
@@ -36,7 +36,7 @@ services:
 ```
 
 ## Parameters
-The environment parameters are split into two halves, separated by an equal, the left hand side representing the host and the right the container side.
+The environment parameters are split into two halves, separated by an equal, the left hand side representing the variable name and the right hand side the value.
 
 | ENV| DEFAULT | DESCRIPTION |
 | ------ | ------ | ------ |
@@ -55,7 +55,7 @@ The volume parameters are split into two halves, separated by a colon, the left 
 | /out | Mount point for final files. Needs to match OUT_FOLDER. |
 | /processed |  Mount point for processed orignals. Needs to match PROCESSED_FOLDER. |
 
-## OCRmyPDF parameters for use with OCRMMPYDF_OPTIONS 
+## OCRmyPDF parameters for use with OCRMYPDF_OPTIONS 
 
 [-h] [-l LANGUAGE] [--image-dpi DPI]
 [--output-type {pdfa,pdf,pdfa-1,pdfa-2,pdfa-3}]
