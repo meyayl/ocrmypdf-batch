@@ -1,4 +1,5 @@
-[![](https://images.microbadger.com/badges/image/meyay/ocrmypdf-batch.svg)](https://microbadger.com/images/meyay/ocrmypdf-batch "Get your own image badge on microbadger.com")[![](https://images.microbadger.com/badges/version/meyay/ocrmypdf-batch.svg)](https://microbadger.com/images/meyay/ocrmypdf-batch "Get your own version badge on microbadger.com")[![](https://images.microbadger.com/badges/commit/meyay/ocrmypdf-batch.svg)](https://microbadger.com/images/meyay/ocrmypdf-batch "Get your own commit badge on microbadger.com")
+[![Known Vulnerabilities](https://snyk.io/test/github/meyayl/ocrmypdf-batch/badge.svg)]
+
 # ocrmypdf-batch
 
 OCRmyPDF 9.6.0 batch processing image with jbig2 and unpaper.   
