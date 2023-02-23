@@ -1,4 +1,6 @@
-FROM ubuntu:20.04 AS download
+FROM ubuntu:22.04 as base
+
+FROM base AS download
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN set -eu; \ 
@@ -9,7 +11,7 @@ RUN set -eu; \
     strip /usr/local/bin/gosu; \
     upx -q /usr/local/bin/gosu;
 
-FROM ubuntu:20.04 AS builder
+FROM base AS builder
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN set -eu; \
@@ -32,7 +34,7 @@ RUN set -eu; \
     strip /usr/local/bin/jbig2; \
     upx -q /usr/local/bin/jbig2
 
-FROM ubuntu:20.04
+FROM base
 ENV DEBIAN_FRONTEND=noninteractive
 
 LABEL org.label-schema.build-date=$BUILD_DATE \

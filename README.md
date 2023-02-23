@@ -2,7 +2,7 @@
 
 # ocrmypdf-batch
 
-OCRmyPDF 9.6.0 batch processing image with jbig2 and unpaper.   
+OCRmyPDF 14.0.3 batch processing image with jbig2 and unpaper.   
 
 On container start it will process all existing PDF files in the IN_FOLDER, once existing files are processed, it registers iNotify watches on the IN_FOLDER and waits for new files that are copied or moved to the IN_FOLDER. It will only process image based PDF files and ignore PDF files that are already text based.
 
@@ -21,14 +21,14 @@ docker run -d \
  --volume $PWD/in:/in \
  --volume $PWD/out:/out \
  --volume $PWD/processed:/processed \
-  meyay/ocrmypdf-batch:9.6.0
+  meyay/ocrmypdf-batch:14.0.3
 ```
 ## Docker Compose Usage 
 ```
-version: '2.2'
+version: '2.4'
 services:
   ocrmypdf-batch:
-    image: meyay/ocrmypdf:9.6.0
+    image: meyay/ocrmypdf:14.0.3
     container_name: ocrmypdf-batch
     volumes:
     - $PWD/in:/in:rw
