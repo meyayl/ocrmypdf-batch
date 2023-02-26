@@ -1,4 +1,4 @@
-[![Known Vulnerabilities](https://snyk.io/test/github/meyayl/ocrmypdf-batch/badge.svg)]
+![Known Vulnerabilities](https://snyk.io/test/github/meyayl/ocrmypdf-batch/badge.svg)
 
 # ocrmypdf-batch
 
