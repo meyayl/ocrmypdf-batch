@@ -1,4 +1,4 @@
-FROM ubuntu:rolling	as base
+FROM ubuntu:23.04	as base
 
 FROM base AS download
 ENV DEBIAN_FRONTEND=noninteractive
