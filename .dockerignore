@@ -1,0 +1,9 @@
+.git
+.github
+.idea
+.DS_Store
+in
+out
+processed
+README.md
+CLAUDE.md

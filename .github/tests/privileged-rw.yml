@@ -1,0 +1,26 @@
+---
+# Root container dropping privileges via su-exec to MAP_UID/MAP_GID for the
+# actual ocrmypdf/mv calls. Requires CAP_SETUID/CAP_SETGID to change UID at
+# all under cap_drop: ALL, plus CAP_CHOWN/CAP_DAC_OVERRIDE for file access.
+services:
+  ocrmypdf-batch:
+    image: ${IMAGE:?IMAGE required}
+    restart: unless-stopped
+    tmpfs:
+      - /tmp:exec
+    cap_drop:
+      - ALL
+    cap_add:
+      - CAP_CHOWN
+      - CAP_DAC_OVERRIDE
+      - CAP_SETUID
+      - CAP_SETGID
+    security_opt:
+      - no-new-privileges
+    environment:
+      MAP_UID: 1001
+      MAP_GID: 1001
+    volumes:
+      - ./in:/in
+      - ./out:/out
+      - ./processed:/processed

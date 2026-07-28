@@ -1,0 +1,8 @@
+/.idea/
+/in/
+/out/
+/processed/
+.DS_Store
+.github/tests/in/
+.github/tests/out/
+.github/tests/processed/
