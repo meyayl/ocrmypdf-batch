@@ -13,9 +13,7 @@ services:
       - no-new-privileges
     environment:
       OCRMYPDF_OPTIONS: "-l deu+eng"
-      # MAP_UID: "1000"
-      # MAP_GID: "1000"
-    # user: "1000:1000"  # must match MAP_UID/MAP_GID above if you override them
+    # user: "1000:1000"  # run as a different UID/GID; chown ./in ./out ./processed to match
     volumes:
       - ./in:/in
       - ./out:/out

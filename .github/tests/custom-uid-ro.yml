@@ -1,7 +1,7 @@
 ---
 # Custom UID/GID (1002:1002, not the image's default 1001:1001) combined
-# with a read-only root filesystem, proving both the MAP_UID/MAP_GID
-# override mechanism and the hardened-rootfs profile work together.
+# with a read-only root filesystem, proving both the user override and the
+# hardened-rootfs profile work together.
 services:
   ocrmypdf-batch:
     image: ${IMAGE:?IMAGE required}
@@ -14,9 +14,6 @@ services:
       - ALL
     security_opt:
       - no-new-privileges
-    environment:
-      MAP_UID: 1002
-      MAP_GID: 1002
     volumes:
       - ./in:/in
       - ./out:/out

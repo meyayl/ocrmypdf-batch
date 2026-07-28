@@ -1,5 +1,5 @@
 ---
-# Image defaults only: no MAP_UID/MAP_GID override, no `user:` override.
+# Image defaults only: no `user:` override.
 # Proves the documented zero-config path (baked-in 1001:1001 user) works.
 services:
   ocrmypdf-batch:

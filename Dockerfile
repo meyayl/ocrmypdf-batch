@@ -53,9 +53,7 @@ ENTRYPOINT ["/entrypoint.sh"]
 ENV IN_FOLDER="/in"  \
     OUT_FOLDER="/out" \
     PROCESSED_FOLDER="/processed" \
-    OCRMYPDF_OPTIONS="-l deu+eng" \
-    MAP_UID="1001" \
-    MAP_GID="1001"
+    OCRMYPDF_OPTIONS="-l deu+eng"
 
 LABEL org.opencontainers.image.title="meyay/ocrmypdf-batch"
 LABEL org.opencontainers.image.description="A Docker image that wraps OCRmyPDF (with jbig2 and unpaper) for unattended batch OCR of scanned PDFs"

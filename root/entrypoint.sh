@@ -16,11 +16,6 @@ check_permissions(){
   current_uid=$(id -u)
   current_gid=$(id -g)
 
-  if [ "${current_uid}" -ne "${MAP_UID}" ] || [ "${current_gid}" -ne "${MAP_GID}" ]; then
-    echo "🛑 Container is running as ${current_uid}:${current_gid}, but MAP_UID/MAP_GID is set to ${MAP_UID}:${MAP_GID}. Start the container with a matching user, e.g. --user ${MAP_UID}:${MAP_GID}"
-    exit 1
-  fi
-
   is_ok=true
 
   for folder in ${IN_FOLDER} ${OUT_FOLDER} ${PROCESSED_FOLDER}; do
@@ -28,22 +23,22 @@ check_permissions(){
     owner_uid=$(stat --format '%u' "${folder}")
     owner_gid=$(stat --format '%g' "${folder}")
 
-    if [ "${owner_uid}" -ne "${MAP_UID}" ] || [ "${owner_gid}" -ne "${MAP_GID}" ]; then
-      echo "❌ Folder ${folder} is owned by ${owner_uid}:${owner_gid}, expected ${MAP_UID}:${MAP_GID}"
+    if [ "${owner_uid}" -ne "${current_uid}" ] || [ "${owner_gid}" -ne "${current_gid}" ]; then
+      echo "❌ Folder ${folder} is owned by ${owner_uid}:${owner_gid}, but the container is running as ${current_uid}:${current_gid}"
       is_ok=false
     fi
 
-    [ -x "${folder}" ] || { echo "❌ User ${MAP_UID}:${MAP_GID} cannot enter folder ${folder} (missing execute permission)"; is_ok=false; }
-    [ -r "${folder}" ] || { echo "❌ User ${MAP_UID}:${MAP_GID} cannot read folder ${folder} (missing read permission)"; is_ok=false; }
-    [ -w "${folder}" ] || { echo "❌ User ${MAP_UID}:${MAP_GID} cannot write folder ${folder} (missing write permission)"; is_ok=false; }
+    [ -x "${folder}" ] || { echo "❌ Cannot enter folder ${folder} (missing execute permission for ${current_uid}:${current_gid})"; is_ok=false; }
+    [ -r "${folder}" ] || { echo "❌ Cannot read folder ${folder} (missing read permission for ${current_uid}:${current_gid})"; is_ok=false; }
+    [ -w "${folder}" ] || { echo "❌ Cannot write folder ${folder} (missing write permission for ${current_uid}:${current_gid})"; is_ok=false; }
 
   done
 
   if [ "${is_ok}" != "true" ]; then
-    echo "🛑 Please correct the folder ownership/permissions, or the MAP_UID/MAP_GID environment variables, before restarting the container"
+    echo "🛑 Please correct the folder ownership/permissions, or run the container as a different user (--user/user:), before restarting"
     exit 1
   else
-    echo "✅ User ${MAP_UID}:${MAP_GID} owns and can enter, read, and write all folders"
+    echo "✅ Running as ${current_uid}:${current_gid}, which owns and can enter, read, and write all folders"
   fi
 
 }
