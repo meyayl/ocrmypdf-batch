@@ -1,0 +1,4 @@
+---
+ignored:
+  - DL3008 # ignore apt-get install version pinning
+  - DL3047 # ignore use of wget without progress bar

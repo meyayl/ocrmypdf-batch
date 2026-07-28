@@ -1,0 +1,439 @@
+---
+name: Build and verify image
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "main"
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+-[0-9]+"
+  pull_request:
+
+permissions: {}
+
+jobs:
+  super-linter:
+    name: Super-Linter
+    if: github.event_name == 'pull_request'
+
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.job }}-super-linter-${{ github.ref }}
+      cancel-in-progress: true
+
+    permissions:
+      contents: read
+      statuses: write
+      pull-requests: write
+
+    uses: ./.github/workflows/reusable-super-linter.yaml
+    with:
+      devops-only: true
+
+  compute-version:
+    name: Compute image version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      image_version: ${{ steps.version.outputs.IMAGE_VERSION }}
+      ocrmypdf_version: ${{ steps.version.outputs.OCRMYPDF_VERSION }}
+      image_created: ${{ steps.version.outputs.IMAGE_CREATED }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Compute version
+        id: version
+        # language="Shell Script"
+        run: |
+          OCRMYPDF_VERSION=$(grep '^ARG OCRMYPDF_VERSION=' Dockerfile | cut -d'=' -f2 | tr -d '"')
+          echo "OCRMYPDF_VERSION=${OCRMYPDF_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "IMAGE_CREATED=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            echo "IMAGE_VERSION=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+          else
+            TAGS=$(gh api repos/${{ github.repository }}/tags --jq '.[].name' || echo "")
+            MAX=-1
+            for tag in $TAGS; do
+              if [[ ${tag} =~ ^${OCRMYPDF_VERSION}-([0-9]+)$ ]]; then
+                N="${BASH_REMATCH[1]}"
+                (( N > MAX )) && MAX=$N
+              fi
+            done
+            echo "IMAGE_VERSION=${OCRMYPDF_VERSION}-$(( MAX + 1 ))" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  build-test-image:
+    name: Build Image for Testing
+    needs: [compute-version]
+    runs-on: ubuntu-latest
+
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.job }}-build-test-image--${{ github.ref }}
+      cancel-in-progress: true
+
+    permissions:
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }} # zizmor: ignore[secrets-outside-env]
+          password: ${{ secrets.DOCKERHUB_TOKEN }} # zizmor: ignore[secrets-outside-env]
+
+      - name: Login to GHCR
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push to GHCR
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
+        with:
+          sbom: true
+          pull: true
+          push: true
+          tags: ghcr.io/meyayl/ocrmypdf-batch:${{ github.run_id }}
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            IMAGE_VERSION=${{ needs.compute-version.outputs.image_version }}
+            IMAGE_CREATED=${{ needs.compute-version.outputs.image_created }}
+            OCRMYPDF_VERSION=${{ needs.compute-version.outputs.ocrmypdf_version }}
+
+  integration-test-image:
+    name: Integration test Image
+    needs: [build-test-image]
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        compose-file:
+          - default.yml
+          - custom-uid-ro.yml
+        runner:
+          - ubuntu-latest
+          - ubuntu-24.04-arm
+
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.job }}-${{ matrix.compose-file }}-${{ matrix.runner }}-${{ github.ref }}
+      cancel-in-progress: true
+
+    permissions:
+      packages: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Login to GHCR
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run integration tests
+        env:
+          IMAGE: ghcr.io/meyayl/ocrmypdf-batch:${{ github.run_id }}
+        # language="Shell Script"
+        run: |
+          export COMPOSE_FILE=".github/tests/${{ matrix.compose-file }}"
+          COMPOSE_PROJECT_NAME="${{ matrix.compose-file }}"
+          export COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME%.yml}"
+          mkdir -p .github/tests/in .github/tests/out .github/tests/processed
+
+          case "${{ matrix.compose-file }}" in
+            custom-uid-ro.yml) OWNER_UID=1002; OWNER_GID=1002 ;;
+            *) OWNER_UID=1001; OWNER_GID=1001 ;;
+          esac
+
+          echo "🔑 Pre-chowning test folders to ${OWNER_UID}:${OWNER_GID}..."
+          # --user 0:0 is required: the image itself now defaults to a
+          # non-root user, so this override is needed to actually chown.
+          # The chmod o+rwX on top is for the runner's own user, which drops
+          # the sample PDF into these same host folders below and otherwise
+          # has no access once they're owned by a non-matching OWNER_UID
+          # (e.g. custom-uid-ro.yml's 1002:1002); it doesn't affect the
+          # ownership check the container itself does on startup.
+          docker run --rm --user 0:0 \
+            -v "$PWD/.github/tests/in":/in \
+            -v "$PWD/.github/tests/out":/out \
+            -v "$PWD/.github/tests/processed":/processed \
+            --entrypoint=sh "${IMAGE}" -c \
+            "chown -R ${OWNER_UID}:${OWNER_GID} /in /out /processed && chmod -R o+rwX /in /out /processed"
+
+          echo "🚀 Starting ocrmypdf-batch container with ${{ matrix.compose-file }}..."
+          docker compose up -d
+          echo "📦 Listing Deployed Compose Projects"
+          docker compose ls
+          echo "⏳ Waiting for container to start..."
+          sleep 5s
+          echo "📋 Container logs:"
+          docker compose logs
+          echo "☕ Checking ocrmypdf version..."
+          docker compose exec ocrmypdf-batch /app/bin/ocrmypdf --version
+          echo "📖 Checking help command..."
+          docker compose exec ocrmypdf-batch /entrypoint.sh help
+          echo "🧪 Dropping sample PDF into /in (re-triggering a 'moved_to' event on each retry, in case an earlier one was missed)..."
+          ok=0
+          for _ in $(seq 1 9); do
+            if [ ! -f ".github/tests/out/sample.pdf" ]; then
+              cp .github/tests/fixtures/sample.pdf .github/tests/in/.sample.pdf.tmp
+              mv .github/tests/in/.sample.pdf.tmp .github/tests/in/sample.pdf
+            fi
+            if [ -f ".github/tests/out/sample.pdf" ] && [ -f ".github/tests/processed/sample.pdf" ]; then
+              ok=1
+              break
+            fi
+            sleep 10
+          done
+          echo "📋 Container logs:"
+          docker compose logs
+          if [ "${ok}" -ne 1 ]; then
+            echo "❌ Timed out waiting for OCR output"
+            docker compose down -v
+            exit 1
+          fi
+          echo "🛑 Stopping container..."
+          docker compose down -v
+
+  scan-image:
+    name: Scan Image with Grype
+    needs: [build-test-image]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || startsWith(github.ref, 'refs/heads/')
+    outputs:
+      cve_report: ${{ steps.scan.outputs.json }}
+
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.job }}-scan-image-${{ github.ref }}
+      cancel-in-progress: true
+
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Login to GHCR
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Grype Scan for all CVEs (non-blocking)
+        uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7
+        id: scan
+        with:
+          image: "ghcr.io/meyayl/ocrmypdf-batch:${{ github.run_id }}"
+          severity-cutoff: high
+          output-format: json
+          fail-build: false
+
+  update-pr:
+    name: Update PullRequest
+    needs: [build-test-image, integration-test-image, scan-image]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Find comment for image tags
+        uses: peter-evans/find-comment@b30e6a3c0ed37e7c023ccd3f1db5c6c0b0c23aad # v4 # zizmor: ignore[superfluous-actions]
+        id: fc
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: Docker image tag(s) pushed
+
+        # If PR, put image tags in the PR comments
+      - name: Create or update comment for image tags
+        uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9 # v5 # zizmor: ignore[superfluous-actions]
+        if: github.event_name == 'pull_request'
+        with:
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          # language="Markdown"
+          body: |
+            Docker image tag(s) pushed:
+            ```text
+            ghcr.io/meyayl/ocrmypdf-batch:${{ github.run_id }}
+            ```
+          edit-mode: replace
+
+  create-release-tag:
+    name: Create release tag
+    needs: [compute-version, integration-test-image]
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/main'
+
+    steps:
+      # A GitHub App token is used instead of the default GITHUB_TOKEN because
+      # tags/refs created with GITHUB_TOKEN do not trigger new workflow runs,
+      # which would prevent the "push: tags:" pipeline stages below from running.
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          permission-contents: write
+
+      - name: Create and push tag
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          IMAGE_VERSION: ${{ needs.compute-version.outputs.image_version }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        # language="Shell Script"
+        run: |
+          gh api "repos/${REPO}/git/refs" \
+            -f "ref=refs/tags/${IMAGE_VERSION}" \
+            -f "sha=${SHA}"
+
+  cve-check-image-and-report:
+    name: Scan Image with Ancore for CVEs and report
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [build-test-image]
+    runs-on: ubuntu-latest
+
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.job }}-check-cve-${{ github.ref }}
+      cancel-in-progress: true
+
+    permissions:
+      contents: read
+      packages: read
+      security-events: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Login to GHCR
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Anchore scan for all CVEs (non-blocking)
+        uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7
+        id: scan
+        with:
+          image: "ghcr.io/meyayl/ocrmypdf-batch:${{ github.run_id }}"
+          severity-cutoff: high
+          output-format: sarif
+          only-fixed: true
+          fail-build: true
+
+      - name: upload Anchore scan SARIF report
+        uses: github/codeql-action/upload-sarif@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4.37.3
+        with:
+          sarif_file: ${{ steps.scan.outputs.sarif }}
+
+  retag-and-push-final-image:
+    name: Retag and push final image
+    needs:
+      [
+        compute-version,
+        build-test-image,
+        integration-test-image,
+        cve-check-image-and-report,
+      ]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    permissions:
+      packages: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }} # zizmor: ignore[secrets-outside-env]
+          password: ${{ secrets.DOCKERHUB_TOKEN }} # zizmor: ignore[secrets-outside-env]
+
+      - name: Login to GHCR
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+
+      - name: Push multi-arch manifest to Docker Hub
+        env:
+          RUN_ID: ${{ github.run_id }}
+          IMAGE_VERSION: ${{ needs.compute-version.outputs.image_version }}
+          OCRMYPDF_VERSION: ${{ needs.compute-version.outputs.ocrmypdf_version }}
+        # language="Shell Script"
+        run: |
+          SRC="ghcr.io/meyayl/ocrmypdf-batch:${RUN_ID}"
+          docker buildx imagetools create \
+            --tag "meyay/ocrmypdf-batch:${IMAGE_VERSION}" \
+            --tag "meyay/ocrmypdf-batch:${OCRMYPDF_VERSION}" \
+            --tag "meyay/ocrmypdf-batch:latest" \
+            "${SRC}"
+
+  create-github-release:
+    name: Create GitHub release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs:
+      - compute-version
+      - retag-and-push-final-image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          OCRMYPDF_VERSION: ${{ needs.compute-version.outputs.ocrmypdf_version }}
+        # language="Shell Script"
+        run: |
+          gh release create "${TAG}" \
+            --repo "${{ github.repository }}" \
+            --title "${TAG}" \
+            --generate-notes

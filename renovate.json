@@ -1,0 +1,31 @@
+{
+	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
+	"extends": ["config:best-practices", ":disableDependencyDashboard"],
+	"description": "Schedule every day between 0 and 5",
+	"schedule": ["* 0-4 * * *"],
+	"customManagers": [
+		{
+			"customType": "regex",
+			"managerFilePatterns": ["/^Dockerfile$/"],
+			"matchStrings": [
+				"#\\s*renovate:\\s*datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>[^\\s]*?))?( extractVersion=(?<extractVersion>[^\\s]*?))?\\sARG .*?_VERSION=\"(?<currentValue>.*)\"\\s"
+			],
+			"versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
+		}
+	],
+	"platformAutomerge": true,
+	"packageRules": [
+		{
+			"matchUpdateTypes": ["major"],
+			"automerge": false
+		},
+		{
+			"matchUpdateTypes": ["minor", "patch", "pin", "digest", "pinDigest"],
+			"automerge": true
+		},
+		{
+			"matchManagers": ["github-actions"],
+			"minimumReleaseAge": "5 days"
+		}
+	]
+}

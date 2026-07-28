@@ -1,0 +1,17 @@
+---
+# Image defaults only: no `user:` override.
+# Proves the documented zero-config path (baked-in 1001:1001 user) works.
+services:
+  ocrmypdf-batch:
+    image: ${IMAGE:?IMAGE required}
+    restart: unless-stopped
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges
+    volumes:
+      - ./in:/in
+      - ./out:/out
+      - ./processed:/processed
