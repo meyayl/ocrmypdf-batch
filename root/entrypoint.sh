@@ -2,6 +2,7 @@
 export LC_ALL=C.UTF-8
 export LANG=C.UTF-8
 
+# shellcheck disable=SC1091 # only exists inside the built image, not in the lint checkout
 source /app/bin/activate
 
 if [ "${1}" == "help" ]; then
@@ -49,6 +50,7 @@ process_file(){
 
   if [[ "${current_file,,}" =~ .*pdf$ ]]; then
     echo "📄 Processing file: ${current_file}"
+    # shellcheck disable=SC2086 # OCRMYPDF_OPTIONS is meant to word-split into multiple ocrmypdf args
     if ocrmypdf ${OCRMYPDF_OPTIONS} "${IN_FOLDER}/${current_file}" "${OUT_FOLDER}/${current_file}"; then
       echo "✅ Successfully processed file and moved file to ${PROCESSED_FOLDER}"
       mv --force "${IN_FOLDER}/${current_file}" "${PROCESSED_FOLDER}/${current_file}"
@@ -63,14 +65,14 @@ echo "🔍 Verify folder ownership and permissions"
 check_permissions
 
 echo "📂 Processing existing files in ${IN_FOLDER}"
-for existing_file in $IN_FOLDER/*; do
+for existing_file in "${IN_FOLDER}"/*; do
   [ "${terminate}" -eq 0 ] || break
   process_file "${existing_file##*/}"
 done
 
 echo "👀 Waiting to process new files created in or moved to ${IN_FOLDER}"
 while [ "${terminate}" -eq 0 ]; do
-  if read -r -t 1 path action file; then
+  if read -r -t 1 _ _ file; then
     process_file "${file}"
   fi
 done < <(inotifywait -m "${IN_FOLDER}" -e create -e moved_to)

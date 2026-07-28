@@ -1,6 +1,6 @@
 {
-  "MD009": false,
-  "MD033": {
-    "allowed_elements": ["br"]
-  }
+	"MD009": false,
+	"MD033": {
+		"allowed_elements": ["br"]
+	}
 }

@@ -170,11 +170,17 @@ jobs:
           echo "🔑 Pre-chowning test folders to ${OWNER_UID}:${OWNER_GID}..."
           # --user 0:0 is required: the image itself now defaults to a
           # non-root user, so this override is needed to actually chown.
+          # The chmod o+rwX on top is for the runner's own user, which drops
+          # the sample PDF into these same host folders below and otherwise
+          # has no access once they're owned by a non-matching OWNER_UID
+          # (e.g. custom-uid-ro.yml's 1002:1002); it doesn't affect the
+          # ownership check the container itself does on startup.
           docker run --rm --user 0:0 \
             -v "$PWD/.github/tests/in":/in \
             -v "$PWD/.github/tests/out":/out \
             -v "$PWD/.github/tests/processed":/processed \
-            --entrypoint=chown "${IMAGE}" -R "${OWNER_UID}:${OWNER_GID}" /in /out /processed
+            --entrypoint=sh "${IMAGE}" -c \
+            "chown -R ${OWNER_UID}:${OWNER_GID} /in /out /processed && chmod -R o+rwX /in /out /processed"
 
           echo "🚀 Starting ocrmypdf-batch container with ${{ matrix.compose-file }}..."
           docker compose up -d

@@ -18,12 +18,14 @@ Built on [OCRmyPDF](https://github.com/ocrmypdf/OCRmyPDF), with `jbig2` for smal
 ## 🚀 Quick Start
 
 The container always runs as an unprivileged user — by default `1001:1001`, baked into the image. The host folders it mounts must already be owned by that same UID/GID, so create and `chown` them first:
+
 ```sh
 mkdir -p in out processed
 sudo chown 1001:1001 in out processed
 ```
 
 ### Docker CLI
+
 ```sh
 docker run -d \
  --name=ocrmypdf-batch \
@@ -38,7 +40,9 @@ docker run -d \
 ```
 
 ### Docker Compose
-An example [`docker-compose.yml`](docker-compose.yml) is included in this repo:
+
+An example [`docker-compose.yml`](docker-compose.yml) is included in this repository:
+
 ```yaml
 services:
   ocrmypdf-batch:
@@ -60,6 +64,7 @@ services:
       - ./out:/out
       - ./processed:/processed
 ```
+
 Run it with `docker compose up -d`.
 
 Both examples run the container hardened: a read-only root filesystem (with a `tmpfs` for `/tmp`, which `ocrmypdf`/`tesseract` need for scratch space but never execute anything from), every Linux capability dropped with none re-added (nothing the container does needs any capability at all — no root, no privilege dropping), and `no-new-privileges` to block escalation. Verified end-to-end with `cap_drop: ALL` and zero `cap_add`.
@@ -77,30 +82,29 @@ Drop a scanned PDF into `./in`. A searchable copy appears in `./out`; the origin
 
 ## ⚙️ Environment Variables
 
-| ENV                | Default      | Description |
-|--------------------|--------------|--------------|
-| `IN_FOLDER`        | `/in`        | Path inside the container watched for incoming PDFs. |
-| `OUT_FOLDER`       | `/out`       | Path inside the container where searchable PDFs are written. |
-| `PROCESSED_FOLDER` | `/processed` | Path inside the container where successfully OCR'd originals are moved. |
+| ENV                | Default      | Description                                                                                                    |
+| ------------------ | ------------ | -------------------------------------------------------------------------------------------------------------- |
+| `IN_FOLDER`        | `/in`        | Path inside the container watched for incoming PDFs.                                                           |
+| `OUT_FOLDER`       | `/out`       | Path inside the container where searchable PDFs are written.                                                   |
+| `PROCESSED_FOLDER` | `/processed` | Path inside the container where successfully OCR'd originals are moved.                                        |
 | `OCRMYPDF_OPTIONS` | `-l deu+eng` | Command-line options passed straight through to `ocrmypdf` — see [OCRmyPDF Options](#-ocrmypdf-options) below. |
 
 > Changing any environment variable requires recreating the container.
 
 ## 📁 Volumes
 
-| Volume       | Description |
-|--------------|--------------|
-| `/in`        | Mount point for incoming files. Must match `IN_FOLDER`. |
+| Volume       | Description                                                         |
+| ------------ | ------------------------------------------------------------------- |
+| `/in`        | Mount point for incoming files. Must match `IN_FOLDER`.             |
 | `/out`       | Mount point for finished, searchable PDFs. Must match `OUT_FOLDER`. |
 | `/processed` | Mount point for processed originals. Must match `PROCESSED_FOLDER`. |
 
 ## 🔧 OCRmyPDF Options
 
-`OCRMYPDF_OPTIONS` accepts any command-line option that `ocrmypdf` itself supports. Since that list grows and changes with the `ocrmypdf` version bundled in the image, look it up directly from the container instead of a hard-coded copy here:
+`OCRMYPDF_OPTIONS` accepts any command-line option that `ocrmypdf` itself supports. Since that list grows and changes with the `ocrmypdf` version bundled in the image, look it up directly from the container instead of a hardcoded copy here:
 
 ```sh
 docker run --rm meyay/ocrmypdf-batch:latest help
 ```
 
 Passing `help` as the container command short-circuits the normal startup — it just prints `ocrmypdf -h` and exits, without touching any volumes.
-

@@ -10,25 +10,25 @@ ARG OCRMYPDF_VERSION="17.8.1"
 
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends \
-      python3 \
-      python3-venv \
-      ghostscript \
-      icc-profiles-free \
-      libxml2 \
-      liblept5 \
-      libsm6 libxext6 libxrender-dev \
-      zlib1g \
-      pngquant \
-      qpdf \
-      unpaper \
-      tesseract-ocr \
-      tesseract-ocr-deu \
-      tesseract-ocr-eng \
-      tesseract-ocr-fra \
-      tesseract-ocr-por \
-      tesseract-ocr-spa \
-      inotify-tools \
-      jbig2 \
+        python3 \
+        python3-venv \
+        ghostscript \
+        tesseract-ocr \
+        tesseract-ocr-deu \
+        tesseract-ocr-eng \
+        tesseract-ocr-fra \
+        tesseract-ocr-por \
+        tesseract-ocr-spa \
+        inotify-tools \
+        icc-profiles-free \
+        libxml2 \
+        liblept5 \
+        libsm6 libxext6 libxrender-dev \
+        zlib1g \
+        qpdf \
+        unpaper \
+        jbig2 \
+        pngquant \
     && rm -rf /var/lib/apt/lists/* /tmp/*
 
 RUN python3 -m venv /app \
@@ -49,6 +49,12 @@ RUN chmod +x /entrypoint.sh
 
 USER 1001:1001
 ENTRYPOINT ["/entrypoint.sh"]
+
+# Confirms the watch loop (inotifywait) is still alive; checked via /proc
+# directly since procps isn't installed and pulling it in just for pgrep/ps
+# isn't worth the extra package.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD grep -aq inotifywait /proc/[0-9]*/cmdline 2>/dev/null || exit 1
 
 ENV IN_FOLDER="/in"  \
     OUT_FOLDER="/out" \
