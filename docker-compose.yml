@@ -1,0 +1,22 @@
+---
+services:
+  ocrmypdf-batch:
+    image: meyay/ocrmypdf-batch:latest
+    container_name: ocrmypdf-batch
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges
+    environment:
+      OCRMYPDF_OPTIONS: "-l deu+eng"
+      # MAP_UID: "1000"
+      # MAP_GID: "1000"
+    # user: "1000:1000"  # must match MAP_UID/MAP_GID above if you override them
+    volumes:
+      - ./in:/in
+      - ./out:/out
+      - ./processed:/processed

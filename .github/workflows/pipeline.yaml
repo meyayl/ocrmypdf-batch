@@ -126,9 +126,8 @@ jobs:
     strategy:
       matrix:
         compose-file:
-          - privileged-defaults.yml
-          - privileged-rw.yml
-          - privileged-ro.yml
+          - default.yml
+          - custom-uid-ro.yml
         runner:
           - ubuntu-latest
           - ubuntu-24.04-arm
@@ -163,14 +162,19 @@ jobs:
           export COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME%.yml}"
           mkdir -p .github/tests/in .github/tests/out .github/tests/processed
 
-          if [[ "${{ matrix.compose-file }}" != "privileged-defaults.yml" ]]; then
-            echo "🔑 Pre-chowning test folders to 1001:1001..."
-            docker run --rm \
-              -v "$PWD/.github/tests/in":/in \
-              -v "$PWD/.github/tests/out":/out \
-              -v "$PWD/.github/tests/processed":/processed \
-              --entrypoint=chown "${IMAGE}" -R 1001:1001 /in /out /processed
-          fi
+          case "${{ matrix.compose-file }}" in
+            custom-uid-ro.yml) OWNER_UID=1002; OWNER_GID=1002 ;;
+            *) OWNER_UID=1001; OWNER_GID=1001 ;;
+          esac
+
+          echo "🔑 Pre-chowning test folders to ${OWNER_UID}:${OWNER_GID}..."
+          # --user 0:0 is required: the image itself now defaults to a
+          # non-root user, so this override is needed to actually chown.
+          docker run --rm --user 0:0 \
+            -v "$PWD/.github/tests/in":/in \
+            -v "$PWD/.github/tests/out":/out \
+            -v "$PWD/.github/tests/processed":/processed \
+            --entrypoint=chown "${IMAGE}" -R "${OWNER_UID}:${OWNER_GID}" /in /out /processed
 
           echo "🚀 Starting ocrmypdf-batch container with ${{ matrix.compose-file }}..."
           docker compose up -d

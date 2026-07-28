@@ -13,34 +13,37 @@ trap 'terminate=1' SIGTERM SIGINT
 
 check_permissions(){
 
-  if [ "${MAP_UID}" == "0" ]; then
-    echo "⚠️ User is root, will change permissions on target files to be readable and writable by everyone!"
-  else 
-    is_owner=true
+  current_uid=$(id -u)
+  current_gid=$(id -g)
 
-    for folder in ${IN_FOLDER} ${OUT_FOLDER} ${PROCESSED_FOLDER}; do
+  if [ "${current_uid}" -ne "${MAP_UID}" ] || [ "${current_gid}" -ne "${MAP_GID}" ]; then
+    echo "🛑 Container is running as ${current_uid}:${current_gid}, but MAP_UID/MAP_GID is set to ${MAP_UID}:${MAP_GID}. Start the container with a matching user, e.g. --user ${MAP_UID}:${MAP_GID}"
+    exit 1
+  fi
 
-      ls=$(stat --format '%u' "${folder}")
-      owner_gid=$(stat --format '%g' "${folder}")
+  is_ok=true
 
-      if [ ${owner_uid} -ne ${MAP_UID} ]; then
-        echo "❌ User UID: ${MAP_UID}, folder UID: ${owner_uid} - missmatch for folder ${folder}"
-        is_owner=false
-      fi 
+  for folder in ${IN_FOLDER} ${OUT_FOLDER} ${PROCESSED_FOLDER}; do
 
-      if [ ${owner_gid} -ne ${MAP_GID} ]; then
-        echo "❌ User GID: ${MAP_GID}, folder GID: ${owner_gid} - missmatch for folder ${folder}"
-        is_owner=false
-      fi
+    owner_uid=$(stat --format '%u' "${folder}")
+    owner_gid=$(stat --format '%g' "${folder}")
 
-    done
-
-    if [ "${is_owner}" != "true" ]; then 
-      echo "🛑 Please correct the MAP_UID/MAP_GID environment variable before restarting the container"
-      exit 1
-    else
-      echo "✅ User is the owner the folders"
+    if [ "${owner_uid}" -ne "${MAP_UID}" ] || [ "${owner_gid}" -ne "${MAP_GID}" ]; then
+      echo "❌ Folder ${folder} is owned by ${owner_uid}:${owner_gid}, expected ${MAP_UID}:${MAP_GID}"
+      is_ok=false
     fi
+
+    [ -x "${folder}" ] || { echo "❌ User ${MAP_UID}:${MAP_GID} cannot enter folder ${folder} (missing execute permission)"; is_ok=false; }
+    [ -r "${folder}" ] || { echo "❌ User ${MAP_UID}:${MAP_GID} cannot read folder ${folder} (missing read permission)"; is_ok=false; }
+    [ -w "${folder}" ] || { echo "❌ User ${MAP_UID}:${MAP_GID} cannot write folder ${folder} (missing write permission)"; is_ok=false; }
+
+  done
+
+  if [ "${is_ok}" != "true" ]; then
+    echo "🛑 Please correct the folder ownership/permissions, or the MAP_UID/MAP_GID environment variables, before restarting the container"
+    exit 1
+  else
+    echo "✅ User ${MAP_UID}:${MAP_GID} owns and can enter, read, and write all folders"
   fi
 
 }
@@ -48,15 +51,12 @@ check_permissions(){
 process_file(){
 
   current_file="${1}"
-  
+
   if [[ "${current_file,,}" =~ .*pdf$ ]]; then
     echo "📄 Processing file: ${current_file}"
-    if su-exec "${MAP_UID}:${MAP_GID}" ocrmypdf ${OCRMYPDF_OPTIONS} "${IN_FOLDER}/${current_file}" "${OUT_FOLDER}/${current_file}"; then
+    if ocrmypdf ${OCRMYPDF_OPTIONS} "${IN_FOLDER}/${current_file}" "${OUT_FOLDER}/${current_file}"; then
       echo "✅ Successfully processed file and moved file to ${PROCESSED_FOLDER}"
-      su-exec "${MAP_UID}:${MAP_GID}" mv --force "${IN_FOLDER}/${current_file}" "${PROCESSED_FOLDER}/${current_file}"
-      if [ ${MAP_UID} -eq 0 ] && [ ${MAP_GID} -eq 0 ]; then
-        chmod 666 "${OUT_FOLDER}/${current_file}"
-      fi
+      mv --force "${IN_FOLDER}/${current_file}" "${PROCESSED_FOLDER}/${current_file}"
     else
       echo "❌ Error processing file: ${current_file}, leaving it in ${IN_FOLDER}"
     fi
@@ -64,7 +64,7 @@ process_file(){
 
 }
 
-echo "🔍 Verify ownership of folders"
+echo "🔍 Verify folder ownership and permissions"
 check_permissions
 
 echo "📂 Processing existing files in ${IN_FOLDER}"

@@ -11,16 +11,26 @@ Built on [OCRmyPDF](https://github.com/ocrmypdf/OCRmyPDF), with `jbig2` for smal
 - **Keeps originals safe** — the searchable copy goes to `OUT_FOLDER`; the original is moved to `PROCESSED_FOLDER` only once OCR succeeds.
 - **Fails loud, not silent** — a file that errors during processing stays in `IN_FOLDER` with a clear log message, so nothing is lost and it's retried on the next restart. (OCRmyPDF feature)
 - **Graceful shutdown** — on `docker stop`, the file currently being processed is allowed to finish before the container exits.
-- **Runs as any user** — map to a non-root `MAP_UID`/`MAP_GID` to match your host folder permissions, or leave it at root for zero-config use.
+- **Non-root by default** — runs as a dedicated unprivileged user (`1001:1001`), no capabilities required at all. Change `MAP_UID`/`MAP_GID` (and the container's own user) together to match any other host folder ownership.
 - **Multi-arch** — built for both `amd64` and `arm64`.
 - **Five languages out of the box** — Tesseract-OCR: `deu`, `eng`, `fra`, `por`, `spa`.
 
 ## 🚀 Quick Start
 
+The container always runs as an unprivileged user — by default `1001:1001`, baked into the image. The host folders it mounts must already be owned by that same UID/GID, so create and `chown` them first:
+```sh
+mkdir -p in out processed
+sudo chown 1001:1001 in out processed
+```
+
 ### Docker CLI
 ```sh
 docker run -d \
  --name=ocrmypdf-batch \
+ --read-only \
+ --tmpfs /tmp \
+ --cap-drop=ALL \
+ --security-opt=no-new-privileges \
  --volume $PWD/in:/in \
  --volume $PWD/out:/out \
  --volume $PWD/processed:/processed \
@@ -28,22 +38,41 @@ docker run -d \
 ```
 
 ### Docker Compose
+An example [`docker-compose.yml`](docker-compose.yml) is included in this repo:
 ```yaml
 services:
   ocrmypdf-batch:
     image: meyay/ocrmypdf-batch:latest
     container_name: ocrmypdf-batch
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges
+    environment:
+      OCRMYPDF_OPTIONS: "-l deu+eng"
+      # MAP_UID: "1000"
+      # MAP_GID: "1000"
+    # user: "1000:1000"  # must match MAP_UID/MAP_GID above if you override them
     volumes:
-      - $PWD/in:/in:rw
-      - $PWD/out:/out:rw
-      - $PWD/processed:/processed:rw
+      - ./in:/in
+      - ./out:/out
+      - ./processed:/processed
 ```
+Run it with `docker compose up -d`.
+
+Both examples run the container hardened: a read-only root filesystem (with a `tmpfs` for `/tmp`, which `ocrmypdf`/`tesseract` need for scratch space but never execute anything from), every Linux capability dropped with none re-added (nothing the container does needs any capability at all — no root, no privilege dropping), and `no-new-privileges` to block escalation. Verified end-to-end with `cap_drop: ALL` and zero `cap_add`.
+
+To run as a different UID/GID (e.g. to match an existing NAS share), change three things together: the `MAP_UID`/`MAP_GID` environment variables, the container's own user (`--user`/`user:`), and the ownership of the host folders. If any of the three disagree, the container refuses to start with a clear error rather than silently failing partway through.
 
 Drop a scanned PDF into `./in`. A searchable copy appears in `./out`; the original moves to `./processed`. If your scanner can deliver PDFs straight to a network share, point `IN_FOLDER` at that share and let the container do the rest.
 
 ## 🧠 How It Works
 
-1. **🔍 Verify ownership** — checks that `IN_FOLDER`, `OUT_FOLDER`, and `PROCESSED_FOLDER` are owned by `MAP_UID`/`MAP_GID` (skipped when running as root).
+1. **🔍 Verify permissions** — checks that the container is actually running as `MAP_UID`/`MAP_GID`, that `IN_FOLDER`, `OUT_FOLDER`, and `PROCESSED_FOLDER` are owned by that UID/GID, and that it can enter, read, and write each of them. Exits with a clear error rather than continuing on a partial match.
 2. **📂 Process existing files** — every PDF already sitting in `IN_FOLDER` is OCR'd once, in order.
 3. **👀 Watch for new files** — an `inotify` watch on `IN_FOLDER` picks up anything created or moved in afterwards.
 4. **🛑 Shut down gracefully** — `SIGTERM`/`SIGINT` (e.g. `docker stop`) stops the watch loop only after the file currently being processed has finished; no half-written PDFs.
@@ -56,8 +85,8 @@ Drop a scanned PDF into `./in`. A searchable copy appears in `./out`; the origin
 | `OUT_FOLDER`       | `/out`       | Path inside the container where searchable PDFs are written. |
 | `PROCESSED_FOLDER` | `/processed` | Path inside the container where successfully OCR'd originals are moved. |
 | `OCRMYPDF_OPTIONS` | `-l deu+eng` | Command-line options passed straight through to `ocrmypdf` — see [OCRmyPDF Options](#-ocrmypdf-options) below. |
-| `MAP_UID`          | `0`          | User ID `ocrmypdf` runs as. If not `0`, must match the owner of all three folders. |
-| `MAP_GID`          | `0`          | Group ID `ocrmypdf` runs as. If not `0`, must match the owner of all three folders. |
+| `MAP_UID`          | `1001`       | Expected user ID the container runs as. Must match the container's actual user (`--user`/`user:`) and the owner of all three folders. |
+| `MAP_GID`          | `1001`       | Expected group ID the container runs as. Must match the container's actual user (`--user`/`user:`) and the owner of all three folders. |
 
 > Changing any environment variable requires recreating the container.
 
