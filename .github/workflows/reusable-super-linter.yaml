@@ -140,6 +140,10 @@ jobs:
           # editorconfig-linter is rather generic and file-specific linters are better
           # turn off editorconfig-checker, which flags too many false positives
           VALIDATE_EDITORCONFIG: false
+          # Biome format and Prettier disagree on JSON indentation (tabs vs spaces)
+          # and both are enabled by default; keep Biome (it also lints, not just
+          # formats) and turn off the redundant/conflicting Prettier JSON check
+          VALIDATE_JSON_PRETTIER: false
           # prevent Kubernetes CRD API's from causing kubeval to fail
           # also change schema location to an up-to-date list
           # https://github.com/yannh/kubernetes-json-schema/#kubeval
