@@ -1,6 +1,6 @@
-[![Docker Pulls](https://img.shields.io/docker/pulls/meyay/ocrmypdf-batch)](https://hub.docker.com/r/meyay/ocrmypdf-batch)  ![Docker Image Version (latest semver)](https://img.shields.io/docker/v/meyay/ocrmypdf-batch) ![Docker Image Size (latest semver)](https://img.shields.io/docker/image-size/meyay/ocrmypdf-batch) [![Open Issues](https://img.shields.io/github/issues-search/meyayl/ocrmypdf-batch?query=is%3Aissue%20state%3Aopen&label=Open%20Issues)](https://github.com/meyayl/ocrmypdf-batch/issues?q=is%3Aissue%20state%3Aopen)
-
 # ocrmypdf-batch
+
+[![Docker Pulls](https://img.shields.io/docker/pulls/meyay/ocrmypdf-batch)](https://hub.docker.com/r/meyay/ocrmypdf-batch) ![Docker Image Version (latest semver)](https://img.shields.io/docker/v/meyay/ocrmypdf-batch) ![Docker Image Size (latest semver)](https://img.shields.io/docker/image-size/meyay/ocrmypdf-batch) [![Open Issues](https://img.shields.io/github/issues-search/meyayl/ocrmypdf-batch?query=is%3Aissue%20state%3Aopen&label=Open%20Issues)](https://github.com/meyayl/ocrmypdf-batch/issues?q=is%3Aissue%20state%3Aopen)
 
 A Docker image that watches a folder and turns scanned PDFs into searchable, text-based PDFs — automatically, unattended, forever.
 
@@ -84,12 +84,12 @@ Drop a scanned PDF into `./in`. A searchable copy appears in `./out`; the origin
 
 ## Environment Variables
 
-| ENV                | Default      | Description                                                                                                     |
-|--------------------|--------------|-----------------------------------------------------------------------------------------------------------------|
-| `IN_FOLDER`        | `/in`        | Path inside the container watched for incoming PDFs.                                                            |
-| `OUT_FOLDER`       | `/out`       | Path inside the container where searchable PDFs are written.                                                    |
-| `PROCESSED_FOLDER` | `/processed` | Path inside the container where successfully OCR'd originals are moved.                                         |
-| `OCRMYPDF_OPTIONS` | `-l deu+eng` | Command-line options passed straight through to `ocrmypdf` — see [OCRmyPDF Options](#ocrmypdf-options) below.   |
+| ENV                | Default      | Description                                                                                                   |
+| ------------------ | ------------ | ------------------------------------------------------------------------------------------------------------- |
+| `IN_FOLDER`        | `/in`        | Path inside the container watched for incoming PDFs.                                                          |
+| `OUT_FOLDER`       | `/out`       | Path inside the container where searchable PDFs are written.                                                  |
+| `PROCESSED_FOLDER` | `/processed` | Path inside the container where successfully OCR'd originals are moved.                                       |
+| `OCRMYPDF_OPTIONS` | `-l deu+eng` | Command-line options passed straight through to `ocrmypdf` — see [OCRmyPDF Options](#ocrmypdf-options) below. |
 
 > Changing any environment variable requires recreating the container.
 
