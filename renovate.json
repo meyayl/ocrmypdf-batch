@@ -16,6 +16,12 @@
 	"platformAutomerge": true,
 	"packageRules": [
 		{
+			"matchDatasources": ["docker"],
+			"matchPackageNames": ["ubuntu"],
+			"matchUpdateTypes": ["major"],
+			"enabled": false
+		},
+		{
 			"matchUpdateTypes": ["major"],
 			"automerge": false
 		},
