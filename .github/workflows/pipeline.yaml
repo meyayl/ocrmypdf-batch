@@ -303,20 +303,21 @@ jobs:
           REPORT: ${{ steps.scan.outputs.json }}
         # language="Shell Script"
         run: |
-          COUNT=$(jq '[.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High")] | length' "${REPORT}")
+          COUNT=$(jq '.matches | length' "${REPORT}")
 
           {
             echo "cve_summary<<CVE_SUMMARY_EOF"
             if [ "${COUNT}" -eq 0 ]; then
-              echo "No High/Critical vulnerabilities found."
+              echo "No vulnerabilities found."
             else
-              echo "Found **${COUNT}** High/Critical vulnerabilit$([ "${COUNT}" -eq 1 ] && echo y || echo ies) (showing up to 20):"
+              echo "Found **${COUNT}** vulnerabilit$([ "${COUNT}" -eq 1 ] && echo y || echo ies) (showing up to 20, sorted by severity):"
               echo ""
               echo "| Severity | Package | Installed | Fix | CVE |"
               echo "|---|---|---|---|---|"
               jq -r '
-                [.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High")]
-                | sort_by(if .vulnerability.severity == "Critical" then 0 else 1 end)
+                def sevrank: {"Critical":0,"High":1,"Medium":2,"Low":3,"Negligible":4,"Unknown":5}[.] // 6;
+                [.matches[]]
+                | sort_by(.vulnerability.severity | sevrank)
                 | .[:20][]
                 | "| " + .vulnerability.severity + " | " + .artifact.name + " | " + .artifact.version + " | "
                   + ((.vulnerability.fix.versions // []) | if length == 0 then "-" else join(", ") end)
@@ -363,7 +364,7 @@ jobs:
             ```
 
             <details>
-            <summary>CVE scan summary (Grype, high/critical)</summary>
+            <summary>CVE scan summary (Grype, all severities)</summary>
 
             ${{ needs.scan-image.outputs.cve_summary }}
 
