@@ -71,12 +71,21 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 
   build-test-image:
-    name: Build Image for Testing
+    name: Build Image for Testing (${{ matrix.arch }})
     needs: [compute-version]
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+            platform: linux/amd64
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            platform: linux/arm64
 
     concurrency:
-      group: ${{ github.workflow }}-${{ github.job }}-build-test-image--${{ github.ref }}
+      group: ${{ github.workflow }}-${{ github.job }}-build-test-image-${{ matrix.arch }}-${{ github.ref }}
       cancel-in-progress: true
 
     permissions:
@@ -104,24 +113,57 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and Push to GHCR
+      - name: Build and Push to GHCR (${{ matrix.arch }})
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
         with:
           sbom: true
           pull: true
           push: true
-          tags: ghcr.io/meyayl/ocrmypdf-batch:${{ github.run_id }}
-          platforms: linux/amd64,linux/arm64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          tags: ghcr.io/meyayl/ocrmypdf-batch:${{ github.run_id }}-${{ matrix.arch }}
+          platforms: ${{ matrix.platform }}
+          cache-from: type=gha,scope=build-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=build-${{ matrix.arch }}
           build-args: |
             IMAGE_VERSION=${{ needs.compute-version.outputs.image_version }}
             IMAGE_CREATED=${{ needs.compute-version.outputs.image_created }}
             OCRMYPDF_VERSION=${{ needs.compute-version.outputs.ocrmypdf_version }}
 
+  merge-test-image:
+    name: Merge multi-arch test image manifest
+    needs: [build-test-image]
+    runs-on: ubuntu-latest
+
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.job }}-merge-test-image-${{ github.ref }}
+      cancel-in-progress: true
+
+    permissions:
+      packages: write
+
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+
+      - name: Login to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create and push multi-arch manifest
+        env:
+          RUN_ID: ${{ github.run_id }}
+        # language="Shell Script"
+        run: |
+          docker buildx imagetools create \
+            --tag "ghcr.io/meyayl/ocrmypdf-batch:${RUN_ID}" \
+            "ghcr.io/meyayl/ocrmypdf-batch:${RUN_ID}-amd64" \
+            "ghcr.io/meyayl/ocrmypdf-batch:${RUN_ID}-arm64"
+
   integration-test-image:
     name: Integration test Image
-    needs: [build-test-image]
+    needs: [merge-test-image]
     runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
@@ -219,7 +261,7 @@ jobs:
 
   scan-image:
     name: Scan Image with Grype
-    needs: [build-test-image]
+    needs: [merge-test-image]
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' || startsWith(github.ref, 'refs/heads/')
     outputs:
@@ -257,7 +299,7 @@ jobs:
 
   update-pr:
     name: Update PullRequest
-    needs: [build-test-image, integration-test-image, scan-image]
+    needs: [merge-test-image, integration-test-image, scan-image]
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
 
@@ -323,7 +365,7 @@ jobs:
   cve-check-image-and-report:
     name: Scan Image with Ancore for CVEs and report
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [build-test-image]
+    needs: [merge-test-image]
     runs-on: ubuntu-latest
 
     concurrency:
@@ -368,7 +410,7 @@ jobs:
     needs:
       [
         compute-version,
-        build-test-image,
+        merge-test-image,
         integration-test-image,
         cve-check-image-and-report,
       ]
