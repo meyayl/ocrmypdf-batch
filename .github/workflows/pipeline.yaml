@@ -373,7 +373,7 @@ jobs:
 
   create-release-tag:
     name: Create release tag
-    needs: [compute-version, integration-test-image]
+    needs: [compute-version, integration-test-image, cve-check-image-and-report]
     runs-on: ubuntu-latest
     if: |
       github.event_name == 'workflow_dispatch' &&
@@ -405,7 +405,7 @@ jobs:
 
   cve-check-image-and-report:
     name: Scan Image with Ancore for CVEs and report
-    if: startsWith(github.ref, 'refs/tags/')
+    if: github.ref == 'refs/heads/main'
     needs: [merge-test-image]
     runs-on: ubuntu-latest
 
@@ -453,7 +453,6 @@ jobs:
         compute-version,
         merge-test-image,
         integration-test-image,
-        cve-check-image-and-report,
       ]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
