@@ -311,7 +311,7 @@ jobs:
             if [ "${COUNT}" -eq 0 ]; then
               echo "No fixable vulnerabilities found."
             else
-              echo "Found **${COUNT}** fixable vulnerabilit$([ "${COUNT}" -eq 1 ] && echo y || echo ies) (showing up to 20, sorted by severity):"
+              echo "Found **${COUNT}** fixable vulnerabilit$([ "${COUNT}" -eq 1 ] && echo y || echo ies) (showing up to 20, sorted by severity):" # codespell:ignore vulnerabilit
               echo ""
               echo "| Severity | Package | Installed | Fix | CVE |"
               echo "|---|---|---|---|---|"
