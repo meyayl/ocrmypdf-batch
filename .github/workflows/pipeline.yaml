@@ -265,7 +265,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' || startsWith(github.ref, 'refs/heads/')
     outputs:
-      cve_report: ${{ steps.scan.outputs.json }}
+      cve_summary: ${{ steps.summary.outputs.cve_summary }}
 
     concurrency:
       group: ${{ github.workflow }}-${{ github.job }}-scan-image-${{ github.ref }}
@@ -296,6 +296,39 @@ jobs:
           severity-cutoff: high
           output-format: json
           fail-build: false
+
+      - name: Summarize scan results for PR comment
+        id: summary
+        env:
+          REPORT: ${{ steps.scan.outputs.json }}
+        # language="Shell Script"
+        run: |
+          COUNT=$(jq '[.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High")] | length' "${REPORT}")
+
+          {
+            echo "cve_summary<<CVE_SUMMARY_EOF"
+            if [ "${COUNT}" -eq 0 ]; then
+              echo "No High/Critical vulnerabilities found."
+            else
+              echo "Found **${COUNT}** High/Critical vulnerabilit$([ "${COUNT}" -eq 1 ] && echo y || echo ies) (showing up to 20):"
+              echo ""
+              echo "| Severity | Package | Installed | Fix | CVE |"
+              echo "|---|---|---|---|---|"
+              jq -r '
+                [.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High")]
+                | sort_by(if .vulnerability.severity == "Critical" then 0 else 1 end)
+                | .[:20][]
+                | "| " + .vulnerability.severity + " | " + .artifact.name + " | " + .artifact.version + " | "
+                  + ((.vulnerability.fix.versions // []) | if length == 0 then "-" else join(", ") end)
+                  + " | " + .vulnerability.id + " |"
+              ' "${REPORT}"
+              if [ "${COUNT}" -gt 20 ]; then
+                echo ""
+                echo "_...and $(( COUNT - 20 )) more._"
+              fi
+            fi
+            echo "CVE_SUMMARY_EOF"
+          } >> "$GITHUB_OUTPUT"
 
   update-pr:
     name: Update PullRequest
@@ -328,6 +361,13 @@ jobs:
             ```text
             ghcr.io/meyayl/ocrmypdf-batch:${{ github.run_id }}
             ```
+
+            <details>
+            <summary>CVE scan summary (Grype, high/critical)</summary>
+
+            ${{ needs.scan-image.outputs.cve_summary }}
+
+            </details>
           edit-mode: replace
 
   create-release-tag:
