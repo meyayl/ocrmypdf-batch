@@ -362,6 +362,12 @@ jobs:
         uses: github/codeql-action/upload-sarif@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28 # v4.37.8
         with:
           sarif_file: ${{ steps.scan.outputs.sarif }}
+          # Tags are always cut from main's current HEAD (see create-release-tag),
+          # so the commit is identical; attributing to main is what makes the
+          # alerts show up in the Security tab, which only surfaces alerts for
+          # branches (the tag ref this job runs on is otherwise invisible there).
+          ref: refs/heads/main
+          sha: ${{ github.sha }}
 
   retag-and-push-final-image:
     name: Retag and push final image
