@@ -448,12 +448,7 @@ jobs:
 
   retag-and-push-final-image:
     name: Retag and push final image
-    needs:
-      [
-        compute-version,
-        merge-test-image,
-        integration-test-image,
-      ]
+    needs: [compute-version, merge-test-image, integration-test-image]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
 
