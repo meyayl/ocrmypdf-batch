@@ -295,6 +295,7 @@ jobs:
           image: "ghcr.io/meyayl/ocrmypdf-batch:${{ github.run_id }}"
           severity-cutoff: high
           output-format: json
+          only-fixed: true
           fail-build: false
 
       - name: Summarize scan results for PR comment
@@ -308,9 +309,9 @@ jobs:
           {
             echo "cve_summary<<CVE_SUMMARY_EOF"
             if [ "${COUNT}" -eq 0 ]; then
-              echo "No vulnerabilities found."
+              echo "No fixable vulnerabilities found."
             else
-              echo "Found **${COUNT}** vulnerabilit$([ "${COUNT}" -eq 1 ] && echo y || echo ies) (showing up to 20, sorted by severity):"
+              echo "Found **${COUNT}** fixable vulnerabilit$([ "${COUNT}" -eq 1 ] && echo y || echo ies) (showing up to 20, sorted by severity):"
               echo ""
               echo "| Severity | Package | Installed | Fix | CVE |"
               echo "|---|---|---|---|---|"
@@ -320,8 +321,7 @@ jobs:
                 | sort_by(.vulnerability.severity | sevrank)
                 | .[:20][]
                 | "| " + .vulnerability.severity + " | " + .artifact.name + " | " + .artifact.version + " | "
-                  + ((.vulnerability.fix.versions // []) | if length == 0 then "-" else join(", ") end)
-                  + " | " + .vulnerability.id + " |"
+                  + (.vulnerability.fix.versions | join(", ")) + " | " + .vulnerability.id + " |"
               ' "${REPORT}"
               if [ "${COUNT}" -gt 20 ]; then
                 echo ""
@@ -364,7 +364,7 @@ jobs:
             ```
 
             <details>
-            <summary>CVE scan summary (Grype, all severities)</summary>
+            <summary>CVE scan summary (Grype, all severities, fixable only)</summary>
 
             ${{ needs.scan-image.outputs.cve_summary }}
 
