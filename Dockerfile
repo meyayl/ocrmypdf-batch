@@ -6,7 +6,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG IMAGE_VERSION
 ARG IMAGE_CREATED
 # renovate: datasource=pypi depName=ocrmypdf
-ARG OCRMYPDF_VERSION="17.10.0"
+ARG OCRMYPDF_VERSION="17.11.0"
 
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends \
