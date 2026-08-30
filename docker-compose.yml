@@ -1,7 +1,7 @@
 ---
 services:
   ocrmypdf-batch:
-    image: meyay/ocrmypdf-batch:latest@sha256:a7d210fcf136d3855c623fe1b245bc3c0a101451d67cf5c32af7ff84c738149d
+    image: meyay/ocrmypdf-batch:latest@sha256:e778d0b8a1d9416f5b88e8a7381506e8b45ccf0aa6b21c83b5d0d28275be3e6c
     container_name: ocrmypdf-batch
     restart: unless-stopped
     read_only: true
