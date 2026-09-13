@@ -22,7 +22,7 @@ ARG INOTIFY_TOOLS_VERSION="3.22.6.0-4"
 ARG ICC_PROFILES_FREE_VERSION="2.0.1+dfsg-1.1"
 # renovate: datasource=repology depName=ubuntu_24_04/libxml2 versioning=deb
 ARG LIBXML2_VERSION="2.9.14+dfsg-1.3ubuntu3.8"
-# renovate: datasource=repology depName=ubuntu_24_04/leptonica versioning=deb
+# renovate: datasource=repology depName=ubuntu_24_04/leptonlib versioning=deb
 ARG LIBLEPT5_VERSION="1.82.0-3build4"
 # renovate: datasource=repology depName=ubuntu_24_04/libsm versioning=deb
 ARG LIBSM6_VERSION="2:1.2.3-1build3"
