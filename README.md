@@ -2,6 +2,9 @@
 
 [![Docker Pulls](https://img.shields.io/docker/pulls/meyay/ocrmypdf-batch)](https://hub.docker.com/r/meyay/ocrmypdf-batch) ![Docker Image Version (latest semver)](https://img.shields.io/docker/v/meyay/ocrmypdf-batch) ![Docker Image Size (latest semver)](https://img.shields.io/docker/image-size/meyay/ocrmypdf-batch) [![Open Issues](https://img.shields.io/github/issues-search/meyayl/ocrmypdf-batch?query=is%3Aissue%20state%3Aopen&label=Open%20Issues)](https://github.com/meyayl/ocrmypdf-batch/issues?q=is%3Aissue%20state%3Aopen)
 
+GitHub: <https://github.com/meyayl/ocrmypdf-batch>
+Docker Hub: <https://hub.docker.com/r/meyay/ocrmypdf-batch>
+
 A Docker image that watches a folder and turns scanned PDFs into searchable, text-based PDFs — automatically, unattended, forever.
 
 Built on [OCRmyPDF](https://github.com/ocrmypdf/OCRmyPDF), with `jbig2` for smaller PDF/A files and `unpaper` for descreening and cleanup.
