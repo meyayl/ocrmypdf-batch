@@ -6,7 +6,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG IMAGE_VERSION
 ARG IMAGE_CREATED
 # renovate: datasource=pypi depName=ocrmypdf
-ARG OCRMYPDF_VERSION="17.11.0"
+ARG OCRMYPDF_VERSION="17.12.1"
 
 # renovate: datasource=repology depName=ubuntu_24_04/python3-defaults versioning=deb
 ARG PYTHON3_VERSION="3.12.3-0ubuntu2.1"
