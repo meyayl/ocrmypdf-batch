@@ -1,6 +1,6 @@
 ARG IMAGE_VERSION="17.11.0-1"
 ARG IMAGE_CREATED="2026-08-29"
-FROM ubuntu:24.04@sha256:008173c23f95b170204355c12626cb5a965d779a7e1283b09e9cffbb1bf33ca3 AS base
+FROM ubuntu:24.04@sha256:a853f94d226358a79c740cfc7bce0c289748f3fe3488d921d038ccd752c61b60 AS base
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG IMAGE_VERSION
@@ -11,7 +11,7 @@ ARG OCRMYPDF_VERSION="17.13.0"
 # renovate: datasource=repology depName=ubuntu_24_04/python3-defaults versioning=deb
 ARG PYTHON3_VERSION="3.12.3-0ubuntu2.1"
 # renovate: datasource=repology depName=ubuntu_24_04/ghostscript versioning=deb
-ARG GHOSTSCRIPT_VERSION="10.02.1~dfsg1-0ubuntu7.8"
+ARG GHOSTSCRIPT_VERSION="10.02.1~dfsg1-0ubuntu7.9"
 # renovate: datasource=repology depName=ubuntu_24_04/tesseract-ocr versioning=deb
 ARG TESSERACT_OCR_VERSION="5.3.4-1build5"
 # renovate: datasource=repology depName=ubuntu_24_04/tesseract-lang versioning=deb
@@ -21,7 +21,7 @@ ARG INOTIFY_TOOLS_VERSION="3.22.6.0-4"
 # renovate: datasource=repology depName=ubuntu_24_04/icc-profiles-free versioning=deb
 ARG ICC_PROFILES_FREE_VERSION="2.0.1+dfsg-1.1"
 # renovate: datasource=repology depName=ubuntu_24_04/libxml2 versioning=deb
-ARG LIBXML2_VERSION="2.9.14+dfsg-1.3ubuntu3.8"
+ARG LIBXML2_VERSION="2.9.14+dfsg-1.3ubuntu3.9"
 # renovate: datasource=repology depName=ubuntu_24_04/leptonlib versioning=deb
 ARG LIBLEPT5_VERSION="1.82.0-3build4"
 # renovate: datasource=repology depName=ubuntu_24_04/libsm versioning=deb
