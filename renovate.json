@@ -30,6 +30,11 @@
 			"automerge": true
 		},
 		{
+			"description": "docker-compose.yml is a user-facing example, not something to keep updated",
+			"matchFileNames": ["docker-compose.yml"],
+			"enabled": false
+		},
+		{
 			"description": "Base image and its pinned apt packages change together, so update them in one PR",
 			"matchDatasources": ["docker", "repology"],
 			"matchPackageNames": ["ubuntu", "ubuntu_24_04/**"],
