@@ -30,6 +30,12 @@
 			"automerge": true
 		},
 		{
+			"description": "Base image and its pinned apt packages change together, so update them in one PR",
+			"matchDatasources": ["docker", "repology"],
+			"matchPackageNames": ["ubuntu", "ubuntu_24_04/**"],
+			"groupName": "ubuntu base image and packages"
+		},
+		{
 			"matchManagers": ["github-actions"],
 			"minimumReleaseAge": "5 days"
 		}
