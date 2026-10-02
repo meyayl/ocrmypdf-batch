@@ -11,7 +11,7 @@ ARG OCRMYPDF_VERSION="17.12.1"
 # renovate: datasource=repology depName=ubuntu_24_04/python3-defaults versioning=deb
 ARG PYTHON3_VERSION="3.12.3-0ubuntu2.1"
 # renovate: datasource=repology depName=ubuntu_24_04/ghostscript versioning=deb
-ARG GHOSTSCRIPT_VERSION="10.02.1~dfsg1-0ubuntu7.8"
+ARG GHOSTSCRIPT_VERSION="10.02.1~dfsg1-0ubuntu7.9"
 # renovate: datasource=repology depName=ubuntu_24_04/tesseract-ocr versioning=deb
 ARG TESSERACT_OCR_VERSION="5.3.4-1build5"
 # renovate: datasource=repology depName=ubuntu_24_04/tesseract-lang versioning=deb
