@@ -31,7 +31,7 @@ ARG LIBXEXT6_VERSION="2:1.3.4-1build2"
 # renovate: datasource=repology depName=ubuntu_24_04/libxrender versioning=deb
 ARG LIBXRENDER_DEV_VERSION="1:0.9.10-1.1build1"
 # renovate: datasource=repology depName=ubuntu_24_04/zlib versioning=deb
-ARG ZLIB1G_VERSION="1:1.3.dfsg-3.1ubuntu2.2"
+ARG ZLIB1G_VERSION="1:1.3.dfsg-3.1ubuntu2.3"
 # renovate: datasource=repology depName=ubuntu_24_04/qpdf versioning=deb
 ARG QPDF_VERSION="11.9.0-1.1ubuntu0.1"
 # renovate: datasource=repology depName=ubuntu_24_04/unpaper versioning=deb
