@@ -40,6 +40,12 @@ ARG UNPAPER_VERSION="7.0.0-3build1"
 ARG JBIG2_VERSION="0.29-2.1build1"
 # renovate: datasource=repology depName=ubuntu_24_04/pngquant versioning=deb
 ARG PNGQUANT_VERSION="2.18.0-1build2"
+# renovate: datasource=repology depName=ubuntu_24_04/apt versioning=deb
+ARG APT_VERSION="2.8.4ubuntu0.1"
+# renovate: datasource=repology depName=ubuntu_24_04/pcre2 versioning=deb
+ARG LIBPCRE2_VERSION="10.42-4ubuntu2.2"
+# renovate: datasource=repology depName=ubuntu_24_04/brotli versioning=deb
+ARG LIBBROTLI1_VERSION="1.1.0-2ubuntu0.1"
 
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends \
@@ -62,6 +68,9 @@ RUN apt-get update \
         unpaper=${UNPAPER_VERSION} \
         jbig2=${JBIG2_VERSION} \
         pngquant=${PNGQUANT_VERSION} \
+        apt=${APT_VERSION} libapt-pkg6.0t64=${APT_VERSION} \
+        libpcre2-8-0=${LIBPCRE2_VERSION} \
+        libbrotli1=${LIBBROTLI1_VERSION} \
     && rm -rf /var/lib/apt/lists/* /tmp/*
 
 RUN python3 -m venv /app \
@@ -85,9 +94,10 @@ ENTRYPOINT ["/entrypoint.sh"]
 
 # Confirms the watch loop (inotifywait) is still alive; checked via /proc
 # directly since procps isn't installed and pulling it in just for pgrep/ps
-# isn't worth the extra package.
+# isn't worth the extra package. Matches /proc/*/comm (executable name only)
+# rather than cmdline, which would also match this check's own sh/grep args.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD grep -aq inotifywait /proc/[0-9]*/cmdline 2>/dev/null || exit 1
+    CMD ["/bin/sh", "-c", "grep -qx inotifywait /proc/[0-9]*/comm 2>/dev/null || exit 1"]
 
 ENV IN_FOLDER="/in"  \
     OUT_FOLDER="/out" \
